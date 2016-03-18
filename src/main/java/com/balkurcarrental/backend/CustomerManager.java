@@ -2,6 +2,7 @@ package com.balkurcarrental.backend;
 
 import com.balkurcarrental.backend.exceptions.InvalidEntityException;
 import com.balkurcarrental.backend.exceptions.EntityNotFoundException;
+import com.balkurcarrental.backend.exceptions.ServiceFailureException;
 import java.util.List;
 
 /**
@@ -21,8 +22,9 @@ public interface CustomerManager {
      * already created or phone number is invalid
      * @throws IllegalArgumentException when customer is null, or customer has
      * already assigned id.
+     * @throws ServiceFailureException when db operation fails.
      */
-    void createCustomer(Customer customer) throws InvalidEntityException;
+    void createCustomer(Customer customer) throws InvalidEntityException, ServiceFailureException;
 
     /**
      * Returns customer with given id.
@@ -32,8 +34,9 @@ public interface CustomerManager {
      * @throws IllegalArgumentException when given id is null.
      * @throws com.balkurcarrental.backend.exceptions.EntityNotFoundException
      * when entity is not found in the database
+     * @throws ServiceFailureException when db operation fails.
      */
-    Customer getCustomerById(Long id) throws EntityNotFoundException;
+    Customer getCustomerById(Long id) throws EntityNotFoundException, ServiceFailureException;
 
     /**
      * Updates customer in database.
@@ -46,8 +49,9 @@ public interface CustomerManager {
      * already created or phone number is invalid
      * @throws com.balkurcarrental.backend.exceptions.EntityNotFoundException
      * when entity is not found in the database
+     * @throws ServiceFailureException when db operation fails.
      */
-    void updateCustomer(Customer customer) throws InvalidEntityException, EntityNotFoundException;
+    void updateCustomer(Customer customer) throws InvalidEntityException, EntityNotFoundException, ServiceFailureException;
 
     /**
      * Deletes customer from database.
@@ -57,13 +61,15 @@ public interface CustomerManager {
      * null id.
      * @throws com.balkurcarrental.backend.exceptions.EntityNotFoundException
      * when entity is not found in the database
+     * @throws ServiceFailureException when db operation fails.
      */
-    void deleteCustomer(Customer customer) throws EntityNotFoundException;
+    void deleteCustomer(Customer customer) throws EntityNotFoundException, ServiceFailureException;
 
     /**
      * Returns list of all customers in the database.
      *
      * @return list of all customers in database.
+     * @throws ServiceFailureException when db operation fails.
      */
     List<Customer> findAllCustomers();
 
@@ -73,8 +79,9 @@ public interface CustomerManager {
      * @param name Name to search for
      * @return list of all customers with given name in the database
      * @throws IllegalArgumentException when name is null
+     * @throws ServiceFailureException when db operation fails.
      */
-    List<Customer> findCustomersByName(String name);
+    List<Customer> findCustomersByName(String name) throws ServiceFailureException;
 
     /**
      * Returns list of all customers with given surname in the database
@@ -82,6 +89,7 @@ public interface CustomerManager {
      * @param surname Surname to search for
      * @return list of all customers with given surname in the database
      * @throws IllegalArgumentException when surname is null
+     * @throws ServiceFailureException when db operation fails.
      */
-    List<Customer> findCustomersBySurname(String surname);
+    List<Customer> findCustomersBySurname(String surname) throws ServiceFailureException;
 }

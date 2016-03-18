@@ -50,32 +50,25 @@ public class Car {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (!(obj instanceof Car)) {
+        if (obj == null) {
             return false;
         }
-        Car car = (Car) obj;
-
-        if (!Objects.equals(getId(), car.getId())) {
+        if (getClass() != obj.getClass()) {
             return false;
         }
-        if (!getBrand().equals(car.getBrand())) {
+        if (this.id == null && this != obj) {
+            // this is a special case - two entities without id assigned yet
+            // should be evaluated as non equal
             return false;
         }
-        if (!Objects.equals(getBrand(), car.getBrand())) {
-            return false;
-        }
-        return Objects.equals(getRegistrationNumber(), car.getRegistrationNumber());
+        final Car other = (Car) obj;
+        return Objects.equals(this.id, other.id);
     }
 
     @Override
     public int hashCode() {
         int hash = 7;
-        hash = 41 * hash + Objects.hashCode(this.id);
-        hash = 41 * hash + Objects.hashCode(this.brand);
-        hash = 41 * hash + Objects.hashCode(this.registrationNumber);
+        hash = 97 * hash + Objects.hashCode(this.id);
         return hash;
     }
 

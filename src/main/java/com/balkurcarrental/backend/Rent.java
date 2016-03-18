@@ -91,33 +91,26 @@ public class Rent {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (!(obj instanceof Rent)) {
+        if (obj == null) {
             return false;
         }
-        Rent rent = (Rent) obj;
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        if (this.id == null && this != obj) {
+            // this is a special case - two entities without id assigned yet
+            // should be evaluated as non equal
+            return false;
+        }
+        final Rent other = (Rent) obj;
+        return Objects.equals(this.id, other.id);
+    }
 
-        if (!Objects.equals(getId(), rent.getId())) {
-            return false;
-        }
-        if (!Objects.equals(getCustomer(), rent.getCustomer())) {
-            return false;
-        }
-        if (!Objects.equals(getCar(), rent.getCar())) {
-            return false;
-        }
-        if (getPricePerDay() != rent.getPricePerDay()) {
-            return false;
-        }
-        if (!Objects.equals(getBeginningOfRent(), rent.getBeginningOfRent())) {
-            return false;
-        }
-        if (getExpectedRentDays() != rent.getExpectedRentDays()) {
-            return false;
-        }
-        return getRealRentDays() == rent.getRealRentDays();
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 97 * hash + Objects.hashCode(this.id);
+        return hash;
     }
 
 }

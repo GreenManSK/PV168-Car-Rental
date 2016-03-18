@@ -3,8 +3,8 @@ package com.balkurcarrental.backend;
 import java.util.Objects;
 
 /**
- * This entity class represents customer. Customer have name, surname and
- * phone number specified. Customer can rent zero or more cars.
+ * This entity class represents customer. Customer have name, surname and phone
+ * number specified. Customer can rent zero or more cars.
  *
  * @author Šimon Baláž [433272], Lukáš Kurčík [445742]
  */
@@ -59,32 +59,25 @@ public class Customer {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (!(obj instanceof Customer)) {
+        if (obj == null) {
             return false;
         }
-        Customer customer = (Customer) obj;
-        if (!Objects.equals(getId(), customer.getId())) {
+        if (getClass() != obj.getClass()) {
             return false;
         }
-        if (!Objects.equals(getName(), customer.getName())) {
+        if (this.id == null && this != obj) {
+            // this is a special case - two entities without id assigned yet
+            // should be evaluated as non equal
             return false;
         }
-        if (!Objects.equals(getSurname(), customer.getSurname())) {
-            return false;
-        }
-        return Objects.equals(getPhoneNumber(), customer.getPhoneNumber());
+        final Customer other = (Customer) obj;
+        return Objects.equals(this.id, other.id);
     }
 
     @Override
     public int hashCode() {
         int hash = 7;
-        hash = 83 * hash + Objects.hashCode(this.id);
-        hash = 83 * hash + Objects.hashCode(this.name);
-        hash = 83 * hash + Objects.hashCode(this.surname);
-        hash = 83 * hash + Objects.hashCode(this.phoneNumber);
+        hash = 97 * hash + Objects.hashCode(this.id);
         return hash;
     }
 

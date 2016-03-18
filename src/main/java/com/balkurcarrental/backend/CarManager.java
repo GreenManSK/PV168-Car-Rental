@@ -2,6 +2,7 @@ package com.balkurcarrental.backend;
 
 import com.balkurcarrental.backend.exceptions.InvalidEntityException;
 import com.balkurcarrental.backend.exceptions.EntityNotFoundException;
+import com.balkurcarrental.backend.exceptions.ServiceFailureException;
 import java.util.List;
 
 /**
@@ -21,8 +22,9 @@ public interface CarManager {
      * registrationNumber is already in the database
      * @throws IllegalArgumentException when customer is null, or customer has
      * already assigned id.
+     * @throws ServiceFailureException when db operation fails.
      */
-    void createCar(Car car) throws InvalidEntityException;
+    void createCar(Car car) throws InvalidEntityException, ServiceFailureException;
 
     /**
      * Returns car with given id.
@@ -32,8 +34,9 @@ public interface CarManager {
      * @throws com.balkurcarrental.backend.exceptions.EntityNotFoundException
      * when entity is not found in the database
      * @throws IllegalArgumentException when given id is null.
+     * @throws ServiceFailureException when db operation fails.
      */
-    Car getCarById(Long id) throws EntityNotFoundException;
+    Car getCarById(Long id) throws EntityNotFoundException, ServiceFailureException;
 
     /**
      * Updates car in database.
@@ -45,8 +48,9 @@ public interface CarManager {
      * @throws com.balkurcarrental.backend.exceptions.InvalidEntityException
      * when brand or registrationNumber is null or car with same
      * registrationNumber is already in the database
+     * @throws ServiceFailureException when db operation fails.
      */
-    void updateCar(Car car) throws InvalidEntityException, EntityNotFoundException;
+    void updateCar(Car car) throws InvalidEntityException, EntityNotFoundException, ServiceFailureException;
 
     /**
      * Deletes car from database.
@@ -55,15 +59,17 @@ public interface CarManager {
      * @throws IllegalArgumentException when car is null, or car has null id.
      * @throws com.balkurcarrental.backend.exceptions.EntityNotFoundException
      * when entity is not found in the database
+     * @throws ServiceFailureException when db operation fails.
      */
-    void deleteCar(Car car) throws EntityNotFoundException;
+    void deleteCar(Car car) throws EntityNotFoundException, ServiceFailureException;
 
     /**
      * Returns list of all car in the database.
      *
      * @return list of all car in database.
+     * @throws ServiceFailureException when db operation fails.
      */
-    List<Car> findAllCars();
+    List<Car> findAllCars() throws ServiceFailureException;
 
     /**
      * Returns list of all cars with given brand in the database
@@ -71,6 +77,7 @@ public interface CarManager {
      * @param brand Brand to search for
      * @return list of all cars with given brand in the database
      * @throws IllegalArgumentException when brand is null
+     * @throws ServiceFailureException when db operation fails.
      */
-    List<Car> findCarsByBrand(String brand);
+    List<Car> findCarsByBrand(String brand) throws ServiceFailureException;
 }
