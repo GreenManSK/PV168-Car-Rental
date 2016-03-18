@@ -1,6 +1,7 @@
 package com.balkurcarrental.backend;
 
-import com.balkurcarrental.backend.exceptions.InvalidCustomerException;
+import com.balkurcarrental.backend.exceptions.InvalidEntityException;
+import com.balkurcarrental.backend.exceptions.EntityNotFoundException;
 import java.util.List;
 
 /**
@@ -15,13 +16,13 @@ public interface CustomerManager {
      * generated and stored into id attribute.
      *
      * @param customer customer to be created
-     * @throws com.balkurcarrental.backend.exceptions.InvalidCustomerException when name
-     * or surname is null, customer with same name and surname is already
-     * created or phone number is invalid
+     * @throws com.balkurcarrental.backend.exceptions.InvalidEntityException
+     * when name or surname is null, customer with same name and surname is
+     * already created or phone number is invalid
      * @throws IllegalArgumentException when customer is null, or customer has
      * already assigned id.
      */
-    void createCustomer(Customer customer) throws InvalidCustomerException;
+    void createCustomer(Customer customer) throws InvalidEntityException;
 
     /**
      * Returns customer with given id.
@@ -29,8 +30,10 @@ public interface CustomerManager {
      * @param id primary key for requested customer
      * @return customer with given primary key or null if customer doesn't exist
      * @throws IllegalArgumentException when given id is null.
+     * @throws com.balkurcarrental.backend.exceptions.EntityNotFoundException
+     * when entity is not found in the database
      */
-    Customer getCustomerById(Long id);
+    Customer getCustomerById(Long id) throws EntityNotFoundException;
 
     /**
      * Updates customer in database.
@@ -38,11 +41,13 @@ public interface CustomerManager {
      * @param customer updated customer to be stored into database.
      * @throws IllegalArgumentException when customer is null, or customer has
      * null id.
-     * @throws com.balkurcarrental.backend.exceptions.InvalidCustomerException when name
-     * or surname is null, customer with same name and surname is already
-     * created or phone number is invalid
+     * @throws com.balkurcarrental.backend.exceptions.InvalidEntityException
+     * when name or surname is null, customer with same name and surname is
+     * already created or phone number is invalid
+     * @throws com.balkurcarrental.backend.exceptions.EntityNotFoundException
+     * when entity is not found in the database
      */
-    void updateCustomer(Customer customer) throws InvalidCustomerException;
+    void updateCustomer(Customer customer) throws InvalidEntityException, EntityNotFoundException;
 
     /**
      * Deletes customer from database.
@@ -50,8 +55,10 @@ public interface CustomerManager {
      * @param customer customer to be deleted from db.
      * @throws IllegalArgumentException when customer is null, or customer has
      * null id.
+     * @throws com.balkurcarrental.backend.exceptions.EntityNotFoundException
+     * when entity is not found in the database
      */
-    void deleteCustomer(Customer customer);
+    void deleteCustomer(Customer customer) throws EntityNotFoundException;
 
     /**
      * Returns list of all customers in the database.

@@ -1,8 +1,7 @@
 package com.balkurcarrental.backend;
 
-import com.balkurcarrental.backend.exceptions.InvalidCarException;
-import com.balkurcarrental.backend.exceptions.InvalidCustomerException;
-import com.balkurcarrental.backend.exceptions.InvalidRentException;
+import com.balkurcarrental.backend.exceptions.EntityNotFoundException;
+import com.balkurcarrental.backend.exceptions.InvalidEntityException;
 import java.util.List;
 
 /**
@@ -13,22 +12,22 @@ import java.util.List;
 public class RentManagerImpl implements RentManager {
 
     @Override
-    public void createRent(Rent rent) throws InvalidRentException, InvalidCustomerException, InvalidCarException {
+    public void createRent(Rent rent) throws InvalidEntityException {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     @Override
-    public Rent getRentById(Long id) {
+    public Rent getRentById(Long id) throws EntityNotFoundException {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     @Override
-    public void updateRent(Rent rent) throws InvalidRentException, InvalidCustomerException, InvalidCarException {
+    public void updateRent(Rent rent) throws InvalidEntityException, EntityNotFoundException {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     @Override
-    public void deleteRent(Rent rent) {
+    public void deleteRent(Rent rent) throws EntityNotFoundException {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
@@ -46,6 +45,5 @@ public class RentManagerImpl implements RentManager {
     public List<Rent> findRentsForCar(Car car) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
-
 
 }

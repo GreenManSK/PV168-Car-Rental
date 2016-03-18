@@ -1,8 +1,7 @@
 package com.balkurcarrental.backend;
 
-import com.balkurcarrental.backend.exceptions.InvalidCarException;
-import com.balkurcarrental.backend.exceptions.InvalidCustomerException;
-import com.balkurcarrental.backend.exceptions.InvalidRentException;
+import com.balkurcarrental.backend.exceptions.EntityNotFoundException;
+import com.balkurcarrental.backend.exceptions.InvalidEntityException;
 import java.util.Date;
 import org.junit.Before;
 import org.junit.Test;
@@ -26,8 +25,7 @@ public class RentManagerImplTest {
     @Rule
     public ExpectedException exceptedException = ExpectedException.none();
 
-    @Test(expected = InvalidRentException.class)
-    public void createRentWithSetId() throws InvalidRentException, InvalidCustomerException, InvalidCarException {
+    public void createRentWithSetId() throws InvalidEntityException {
         Customer customer = new Customer();
         customer.setId(4L);
         Car car = new Car();
@@ -35,22 +33,22 @@ public class RentManagerImplTest {
         Rent rent = makeRent(customer, car, 250, new Date(2016, 3, 9), 10, 5);
         rent.setId(4L);
 
-        exceptedException.expect(InvalidRentException.class);
+        exceptedException.expect(InvalidEntityException.class);
         manager.createRent(rent);
     }
 
     @Test
-    public void createRentWithInvalidCar() throws InvalidCarException, InvalidRentException, InvalidCustomerException {
+    public void createRentWithInvalidCar() throws InvalidEntityException {
         Customer customer = new Customer();
         customer.setId(5L);
         Car car = new Car();
         Rent rent = makeRent(customer, car, 250, new Date(2016, 3, 9), 10, 5);
 
-        exceptedException.expect(InvalidCarException.class);
+        exceptedException.expect(InvalidEntityException.class);
         manager.createRent(rent);
     }
 
-    public void createRentsWithSameDateForOneCar() throws InvalidRentException, InvalidCustomerException, InvalidCarException {
+    public void createRentsWithSameDateForOneCar() throws InvalidEntityException {
         Customer customerLukas = new Customer();
         customerLukas.setId(6L);
         Customer customerJanko = new Customer();
@@ -59,12 +57,12 @@ public class RentManagerImplTest {
         car.setId(6L);
 
         Date date = new Date(2016, 3, 9);
-        Rent rent = makeRent(customerLukas, car, 250, date, 10, 5);
+        Rent rent1 = makeRent(customerLukas, car, 250, date, 10, 5);
 
-        manager.createRent(rent);
+        manager.createRent(rent1);
 
         Rent rent2 = makeRent(customerJanko, car, 250, date, 10, 5);
-        exceptedException.expect(InvalidRentException.class);
+        exceptedException.expect(InvalidEntityException.class);
         manager.createRent(rent2);
     }
 

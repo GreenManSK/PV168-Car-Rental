@@ -1,6 +1,7 @@
 package com.balkurcarrental.backend;
 
-import com.balkurcarrental.backend.exceptions.InvalidCarException;
+import com.balkurcarrental.backend.exceptions.EntityNotFoundException;
+import com.balkurcarrental.backend.exceptions.InvalidEntityException;
 import java.util.List;
 
 /**
@@ -11,7 +12,7 @@ import java.util.List;
 public class CarManagerImpl implements CarManager {
 
     @Override
-    public void createCar(Car car) throws InvalidCarException {
+    public void createCar(Car car) throws InvalidEntityException {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
@@ -21,12 +22,12 @@ public class CarManagerImpl implements CarManager {
     }
 
     @Override
-    public void updateCar(Car car) throws InvalidCarException {
+    public void updateCar(Car car) throws InvalidEntityException, EntityNotFoundException {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     @Override
-    public void deleteCar(Car car) {
+    public void deleteCar(Car car) throws EntityNotFoundException {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
