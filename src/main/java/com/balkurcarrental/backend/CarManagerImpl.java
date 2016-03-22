@@ -192,7 +192,7 @@ public class CarManagerImpl implements CarManager {
             throw new InvalidEntityException("car brand is null");
         }
 
-        if (car.getBrand().trim().equals("")) {
+        if (car.getBrand().isEmpty()) {
             throw new InvalidEntityException("car brand is empty");
         }
 
@@ -200,7 +200,7 @@ public class CarManagerImpl implements CarManager {
             throw new InvalidEntityException("car registration number is null");
         }
 
-        if (car.getRegistrationNumber().trim().equals("")) {
+        if (car.getRegistrationNumber().isEmpty()) {
             throw new InvalidEntityException("car registration number is empty");
         }
     }
