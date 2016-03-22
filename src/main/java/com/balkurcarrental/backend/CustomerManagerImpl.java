@@ -243,7 +243,7 @@ public class CustomerManagerImpl implements CustomerManager {
             throw new InvalidEntityException("Name of customer is null");
         }
 
-        if (customer.getName().trim().equals("")) {
+        if (customer.getName().isEmpty()) {
             throw new InvalidEntityException("Name of customer is empty");
         }
 
@@ -251,7 +251,7 @@ public class CustomerManagerImpl implements CustomerManager {
             throw new InvalidEntityException("Surname of customer is null");
         }
 
-        if (customer.getSurname().trim().equals("")) {
+        if (customer.getSurname().isEmpty()) {
             throw new InvalidEntityException("Surname of customer is empty");
         }
         
@@ -259,7 +259,7 @@ public class CustomerManagerImpl implements CustomerManager {
             throw new InvalidEntityException("Phone number of customer is null");
         }
 
-        if (customer.getPhoneNumber().trim().equals("")) {
+        if (customer.getPhoneNumber().isEmpty()) {
             throw new InvalidEntityException("Phone number of customer is empty");
         }        
         
