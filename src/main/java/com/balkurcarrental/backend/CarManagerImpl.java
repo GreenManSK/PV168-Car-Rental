@@ -30,15 +30,17 @@ public class CarManagerImpl implements CarManager {
             throw new IllegalArgumentException("car id is already set");
         }
 
-        if (!isRegistrationNumberUnique(car)) {
-            throw new InvalidEntityException("Car with same registration number found when inserting car " + car);
-        }
-
         try (Connection connection = dataSource.getConnection();
                 PreparedStatement st = connection.prepareStatement(
                         "INSERT INTO car (brand, registration_number) VALUES (?,?)",
                         Statement.RETURN_GENERATED_KEYS
                 )) {
+
+            connection.setAutoCommit(false);
+            if (!isRegistrationNumberUnique(connection, car)) {
+                throw new InvalidEntityException("Car with same registration number found when inserting car " + car);
+            }
+
             st.setString(1, car.getBrand());
             st.setString(2, car.getRegistrationNumber());
 
@@ -50,6 +52,7 @@ public class CarManagerImpl implements CarManager {
 
             ResultSet keyRS = st.getGeneratedKeys();
             car.setId(getKey(keyRS, car));
+            connection.commit();
         } catch (SQLException ex) {
             throw new ServiceFailureException("Error when inserting car " + car, ex);
         }
@@ -93,14 +96,15 @@ public class CarManagerImpl implements CarManager {
             throw new IllegalArgumentException("car id is null");
         }
 
-        if (!isRegistrationNumberUnique(car)) {
-            throw new InvalidEntityException("Car with same registration number found when updating car " + car);
-        }
-
         try (Connection connection = dataSource.getConnection();
                 PreparedStatement st = connection.prepareStatement(
                         "UPDATE car SET brand = ?, registration_number = ? WHERE id = ?"
                 )) {
+            connection.setAutoCommit(false);
+            if (!isRegistrationNumberUnique(connection, car)) {
+                throw new InvalidEntityException("Car with same registration number found when updating car " + car);
+            }
+
             st.setString(1, car.getBrand());
             st.setString(2, car.getRegistrationNumber());
             st.setLong(3, car.getId());
@@ -111,6 +115,7 @@ public class CarManagerImpl implements CarManager {
             } else if (count != 1) {
                 throw new ServiceFailureException("Invalid updated rows count detected (one row should be updated): " + count + " when updating car " + car);
             }
+            connection.commit();
         } catch (SQLException ex) {
             throw new ServiceFailureException("Error when updating car " + car, ex);
         }
@@ -236,11 +241,10 @@ public class CarManagerImpl implements CarManager {
         return car;
     }
 
-    private boolean isRegistrationNumberUnique(Car car) {
-        try (Connection connection = dataSource.getConnection();
-                PreparedStatement st = connection.prepareStatement(
-                        "SELECT id FROM car WHERE registration_number = ?"
-                )) {
+    private boolean isRegistrationNumberUnique(Connection connection, Car car) {
+        try (PreparedStatement st = connection.prepareStatement(
+                "SELECT id FROM car WHERE registration_number = ?"
+        )) {
             st.setString(1, car.getRegistrationNumber());
             ResultSet rs = st.executeQuery();
 
