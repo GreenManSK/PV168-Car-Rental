@@ -99,7 +99,7 @@ public class CarManagerImpl implements CarManager {
             st.setLong(1, id);
             ResultSet rs = st.executeQuery();
 
-            Car car = executeQueryForSingleGrave(st);
+            Car car = executeQueryForSingleCar(st);
             if (car != null) {
                 return car;
             } else {
@@ -233,7 +233,7 @@ public class CarManagerImpl implements CarManager {
         }
     }
 
-    static Car executeQueryForSingleGrave(PreparedStatement st) throws
+    static Car executeQueryForSingleCar(PreparedStatement st) throws
             SQLException, EntityNotFoundException {
         ResultSet rs = st.executeQuery();
         if (rs.next()) {
