@@ -25,10 +25,6 @@ import static org.mockito.Mockito.*;
  */
 public class CarManagerImplTest {
 
-    private static final Comparator<Car> CAR_ID_COMPARATOR = (c1, c2) -> c1.
-            getId().compareTo(
-                    c2.getId());
-
     private CarManagerImpl managerImpl;
     private DataSource dataSource;
 
@@ -69,8 +65,7 @@ public class CarManagerImplTest {
     }
 
     @Test
-    public void createAndGetCar() throws InvalidEntityException,
-            EntityNotFoundException {
+    public void createAndGetCar() {
         Car car = createCarBMW().build();
         managerImpl.createCar(car);
 
@@ -84,20 +79,16 @@ public class CarManagerImplTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void createNullCar() throws InvalidEntityException {
+    public void createNullCar() {
         managerImpl.createCar(null);
     }
 
-    private void testCreateUnsuccessfuly(Consumer<CarBuilder> setOperation)
-            throws
-            InvalidEntityException {
+    private void testCreateUnsuccessfuly(Consumer<CarBuilder> setOperation) {
         testCreateUnsuccessfuly(setOperation, IllegalArgumentException.class);
     }
 
     private void testCreateUnsuccessfuly(Consumer<CarBuilder> setOperation,
-            Class<? extends Exception> exceptionClass)
-            throws
-            InvalidEntityException {
+            Class<? extends Exception> exceptionClass) {
         CarBuilder carBuilder = createCarBMW();
         setOperation.accept(carBuilder);
         Car car = carBuilder.build();
@@ -106,39 +97,36 @@ public class CarManagerImplTest {
     }
 
     @Test
-    public void createCarWithSetId() throws InvalidEntityException {
+    public void createCarWithSetId() {
         testCreateUnsuccessfuly((cb) -> cb.id(12L));
     }
 
     @Test
-    public void createCarWithNullBrand() throws InvalidEntityException {
+    public void createCarWithNullBrand() {
         testCreateUnsuccessfuly((cb) -> cb.brand(null),
                 InvalidEntityException.class);
     }
 
     @Test
-    public void createCarWithEmptyBrand() throws InvalidEntityException {
+    public void createCarWithEmptyBrand() {
         testCreateUnsuccessfuly((cb) -> cb.brand("   "),
                 InvalidEntityException.class);
     }
 
     @Test
-    public void createCarWithNullRegistrationNumber() throws
-            InvalidEntityException {
+    public void createCarWithNullRegistrationNumber() {
         testCreateUnsuccessfuly((cb) -> cb.registrationNumber(null),
                 InvalidEntityException.class);
     }
 
     @Test
-    public void createCarWithEmptyRegistrationNumber() throws
-            InvalidEntityException {
+    public void createCarWithEmptyRegistrationNumber() {
         testCreateUnsuccessfuly((cb) -> cb.registrationNumber("    "),
                 InvalidEntityException.class);
     }
 
     @Test
-    public void createCarWithUsedRegistrationNumber() throws
-            InvalidEntityException {
+    public void createCarWithUsedRegistrationNumber() {
         String regNumber = "ABC123";
         Car carBMW = createCarBMW().registrationNumber(regNumber).build();
         Car carPeugeot = createCarMercedes().registrationNumber(regNumber).
@@ -150,17 +138,16 @@ public class CarManagerImplTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void getCarByNullId() throws EntityNotFoundException {
+    public void getCarByNullId() {
         Car carById = managerImpl.getCarById(null);
     }
 
     @Test(expected = EntityNotFoundException.class)
-    public void getCarByNotExistingId() throws EntityNotFoundException {
+    public void getCarByNotExistingId() {
         Car carById = managerImpl.getCarById(1024L);
     }
 
-    private void testUpdateSuccessfuly(Consumer<Car> updateOperation) throws
-            InvalidEntityException, EntityNotFoundException {
+    private void testUpdateSuccessfuly(Consumer<Car> updateOperation) {
         Car carBmw = createCarBMW().build();
         Car carPeugeot = createCarMercedes().build();
         managerImpl.createCar(carBmw);
@@ -176,8 +163,7 @@ public class CarManagerImplTest {
     }
 
     @Test
-    public void updateCar() throws InvalidEntityException,
-            EntityNotFoundException {
+    public void updateCar() {
         testUpdateSuccessfuly((c) -> {
             c.setRegistrationNumber("ABC123");
             c.setBrand("Peugeot");
@@ -185,30 +171,26 @@ public class CarManagerImplTest {
     }
 
     @Test
-    public void updateCarBrand() throws InvalidEntityException,
-            EntityNotFoundException {
+    public void updateCarBrand() {
         testUpdateSuccessfuly((c) -> {
             c.setBrand("Peugeot");
         });
     }
 
     @Test
-    public void updateCarRegistrationNumber() throws InvalidEntityException,
-            EntityNotFoundException {
+    public void updateCarRegistrationNumber() {
         testUpdateSuccessfuly((c) -> {
             c.setRegistrationNumber("ABC123");
         });
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void updateNullCar() throws InvalidEntityException,
-            EntityNotFoundException {
+    public void updateNullCar() {
         managerImpl.updateCar(null);
     }
 
     @Test
-    public void updateCarWithNullId() throws InvalidEntityException,
-            EntityNotFoundException {
+    public void updateCarWithNullId() {
         Car car = createCarBMW().build();
         car.setBrand("BCC");
         expectedException.expect(IllegalArgumentException.class);
@@ -216,8 +198,7 @@ public class CarManagerImplTest {
     }
 
     @Test
-    public void updateCarWithNonExistingId() throws InvalidEntityException,
-            EntityNotFoundException {
+    public void updateCarWithNonExistingId() {
         Car car = createCarBMW().id(128L).build();
         car.setBrand("BCC");
         expectedException.expect(EntityNotFoundException.class);
@@ -225,40 +206,35 @@ public class CarManagerImplTest {
     }
 
     @Test
-    public void updateCarWithNullBrand() throws InvalidEntityException,
-            EntityNotFoundException {
+    public void updateCarWithNullBrand() {
         Car car = createCarBMW().brand(null).build();
         expectedException.expect(InvalidEntityException.class);
         managerImpl.updateCar(car);
     }
 
     @Test
-    public void updateCarWithEmptyBrand() throws InvalidEntityException,
-            EntityNotFoundException {
+    public void updateCarWithEmptyBrand() {
         Car car = createCarBMW().brand("   ").build();
         expectedException.expect(InvalidEntityException.class);
         managerImpl.updateCar(car);
     }
 
     @Test
-    public void updateCarWithNullRegistrationNumber() throws
-            InvalidEntityException, EntityNotFoundException {
+    public void updateCarWithNullRegistrationNumber() {
         Car car = createCarBMW().registrationNumber(null).build();
         expectedException.expect(InvalidEntityException.class);
         managerImpl.updateCar(car);
     }
 
     @Test
-    public void updateCarWithEmptyRegistrationNumber() throws
-            InvalidEntityException, EntityNotFoundException {
+    public void updateCarWithEmptyRegistrationNumber() {
         Car car = createCarBMW().registrationNumber("   ").build();
         expectedException.expect(InvalidEntityException.class);
         managerImpl.updateCar(car);
     }
 
     @Test
-    public void updateCarWithUsedRegistrationNumber() throws
-            InvalidEntityException, EntityNotFoundException {
+    public void updateCarWithUsedRegistrationNumber() {
         String regNumber = "DDFGGG";
         Car carBMW = createCarBMW().build();
         Car carMercedes = createCarMercedes().registrationNumber(regNumber).
@@ -273,8 +249,7 @@ public class CarManagerImplTest {
     }
 
     @Test
-    public void deleteCar() throws InvalidEntityException,
-            EntityNotFoundException {
+    public void deleteCar() {
         Car carBmw = createCarBMW().build();
         Car carMercedes = createCarMercedes().build();
         managerImpl.createCar(carBmw);
@@ -291,26 +266,26 @@ public class CarManagerImplTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void deleteNullCar() throws EntityNotFoundException {
+    public void deleteNullCar() {
         managerImpl.deleteCar(null);
     }
 
     @Test
-    public void deleteCarWithNullId() throws EntityNotFoundException {
+    public void deleteCarWithNullId() {
         Car car = createCarBMW().build();
         expectedException.expect(IllegalArgumentException.class);
         managerImpl.deleteCar(car);
     }
 
     @Test
-    public void deleteCarWithNonExistingId() throws EntityNotFoundException {
+    public void deleteCarWithNonExistingId() {
         Car car = createCarBMW().id(128L).build();
         expectedException.expect(EntityNotFoundException.class);
         managerImpl.deleteCar(car);
     }
 
     @Test
-    public void findAllCars() throws InvalidEntityException {
+    public void findAllCars() {
         assertThat(managerImpl.findAllCars()).isEmpty();
 
         Car c1 = createCarBMW().build();
@@ -329,7 +304,7 @@ public class CarManagerImplTest {
     }
 
     @Test
-    public void findCarsByBrand() throws InvalidEntityException {
+    public void findCarsByBrand() {
         Car c1 = createCarBMW().build();
         Car c2 = createCarMercedes().build();
         Car c3 = new CarBuilder().brand("Mercedes").registrationNumber(
@@ -344,14 +319,14 @@ public class CarManagerImplTest {
     }
 
     @Test
-    public void findCarsByNonExistingBrand() throws InvalidEntityException {
+    public void findCarsByNonExistingBrand() {
         Car c1 = createCarBMW().build();
         managerImpl.createCar(c1);
         assertThat(managerImpl.findCarsByBrand("Lenovo")).isEmpty();
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void findCarsByNullBrand() throws InvalidEntityException {
+    public void findCarsByNullBrand() {
         managerImpl.findCarsByBrand(null);
     }
 
