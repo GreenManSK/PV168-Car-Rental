@@ -1,8 +1,8 @@
 package com.balkurcarrental.backend;
 
-import com.balkurcarrental.backend.exceptions.EntityNotFoundException;
-import com.balkurcarrental.backend.exceptions.InvalidEntityException;
-import com.balkurcarrental.backend.exceptions.ServiceFailureException;
+import com.balkurcarrental.common.EntityNotFoundException;
+import com.balkurcarrental.common.InvalidEntityException;
+import com.balkurcarrental.common.ServiceFailureException;
 import java.util.List;
 
 /**

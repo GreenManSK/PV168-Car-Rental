@@ -1,11 +1,11 @@
-package com.balkurcarrental.backend.exceptions;
+package com.balkurcarrental.common;
 
 /**
  * Invalid entity exception
  *
  * @author Lukáš Kurčík <lukas.kurcik at gmail.com>
  */
-public class InvalidEntityException extends Exception {
+public class InvalidEntityException extends RuntimeException {
 
     public InvalidEntityException(String msg) {
         super(msg);

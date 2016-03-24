@@ -1,14 +1,16 @@
 package com.balkurcarrental.backend;
 
-import com.balkurcarrental.backend.exceptions.EntityNotFoundException;
-import com.balkurcarrental.backend.exceptions.InvalidEntityException;
-import com.balkurcarrental.backend.exceptions.ServiceFailureException;
+import com.balkurcarrental.common.DBUtils;
+import com.balkurcarrental.common.EntityNotFoundException;
+import com.balkurcarrental.common.InvalidEntityException;
+import com.balkurcarrental.common.ServiceFailureException;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.sql.DataSource;
+import com.balkurcarrental.common.DBUtils.Operation;
 
 /**
  * Implementation of car manager
@@ -17,92 +19,123 @@ import javax.sql.DataSource;
  */
 public class CarManagerImpl implements CarManager {
 
-    private final DataSource dataSource;
+    private static final Logger logger = Logger.getLogger(
+            CarManagerImpl.class.getName());
 
-    public CarManagerImpl(DataSource dataSource) {
+    private DataSource dataSource;
+
+    public void setDataSource(DataSource dataSource) {
         this.dataSource = dataSource;
     }
 
+    private void checkDataSource() {
+        if (dataSource == null) {
+            throw new IllegalStateException("DataSource is not set");
+        }
+    }
+
     @Override
-    public void createCar(Car car) throws InvalidEntityException, ServiceFailureException {
+    public void createCar(Car car) throws InvalidEntityException {
+        checkDataSource();
         validate(car);
         if (car.getId() != null) {
             throw new IllegalArgumentException("car id is already set");
         }
 
-        try (Connection connection = dataSource.getConnection();
-                PreparedStatement st = connection.prepareStatement(
-                        "INSERT INTO car (brand, registration_number) VALUES (?,?)",
-                        Statement.RETURN_GENERATED_KEYS
-                )) {
-
+        Connection connection = null;
+        PreparedStatement st = null;
+        try {
+            connection = dataSource.getConnection();
             connection.setAutoCommit(false);
+            st = connection.prepareStatement(
+                    "INSERT INTO car (brand, registration_number) VALUES (?,?)",
+                    Statement.RETURN_GENERATED_KEYS
+            );
+
             if (!isRegistrationNumberUnique(connection, car)) {
-                throw new InvalidEntityException("Car with same registration number found when inserting car " + car);
+                throw new InvalidEntityException(
+                        "Car with same registration number found when inserting car " + car);
             }
 
             st.setString(1, car.getBrand());
             st.setString(2, car.getRegistrationNumber());
 
             int addedRows = st.executeUpdate();
-            if (addedRows != 1) {
-                throw new ServiceFailureException("Internal Error: More rows ("
-                        + addedRows + ") inserted when trying to insert car " + car);
-            }
+            DBUtils.checkUpdatesCount(addedRows, car, Operation.INSERT);
 
-            ResultSet keyRS = st.getGeneratedKeys();
-            car.setId(getKey(keyRS, car));
+            Long id = DBUtils.getId(st.getGeneratedKeys());
+            car.setId(id);
             connection.commit();
         } catch (SQLException ex) {
-            throw new ServiceFailureException("Error when inserting car " + car, ex);
+            String msg = "Error when inserting car " + car + " into db";
+            logger.log(Level.SEVERE, msg, ex);
+            throw new ServiceFailureException(msg, ex);
+        } catch (EntityNotFoundException ex) {
+            Logger.getLogger(CarManagerImpl.class.getName()).log(Level.SEVERE,
+                    null, ex);
+        } finally {
+            DBUtils.doRollbackQuietly(connection);
+            DBUtils.closeQuietly(connection, st);
         }
     }
 
     @Override
-    public Car getCarById(Long id) throws EntityNotFoundException, ServiceFailureException {
+    public Car getCarById(Long id) throws EntityNotFoundException {
+        checkDataSource();
         if (id == null) {
-            throw new IllegalArgumentException("Trying to retrive car with null id");
+            throw new IllegalArgumentException(
+                    "Trying to retrive car with null id");
         }
-        try (Connection connection = dataSource.getConnection();
-                PreparedStatement st = connection.prepareStatement(
-                        "SELECT id, brand, registration_number FROM car WHERE id = ?"
-                )) {
+
+        Connection connection = null;
+        PreparedStatement st = null;
+
+        try {
+            connection = dataSource.getConnection();
+            st = connection.prepareStatement(
+                    "SELECT id, brand, registration_number FROM car WHERE id = ?"
+            );
+
             st.setLong(1, id);
             ResultSet rs = st.executeQuery();
 
-            if (rs.next()) {
-                Car car = resultSetToCar(rs);
-
-                if (rs.next()) {
-                    throw new ServiceFailureException(
-                            "Internal error: More entities with the same id found "
-                            + "(source id: " + id + ", found " + car + " and " + resultSetToCar(rs));
-
-                }
-
+            Car car = executeQueryForSingleGrave(st);
+            if (car != null) {
                 return car;
             } else {
-                throw new EntityNotFoundException("Car with id " + id + " was not found in database.");
+                throw new EntityNotFoundException(
+                        "Car with id " + id + " was not found in database.");
             }
         } catch (SQLException ex) {
-            throw new ServiceFailureException("Error when retrieving car with id " + id, ex);
+            String msg = "Error when retrieving car with id " + id;
+            logger.log(Level.SEVERE, msg, ex);
+            throw new ServiceFailureException(msg, ex);
+        } finally {
+            DBUtils.closeQuietly(connection, st);
         }
     }
 
     @Override
-    public void updateCar(Car car) throws InvalidEntityException, EntityNotFoundException, ServiceFailureException {
+    public void updateCar(Car car) throws InvalidEntityException,
+            EntityNotFoundException {
+        checkDataSource();
         validate(car);
         if (car.getId() == null) {
             throw new IllegalArgumentException("car id is null");
         }
 
-        try (Connection connection = dataSource.getConnection();
-                PreparedStatement st = connection.prepareStatement(
-                        "UPDATE car SET brand = ?, registration_number = ? WHERE id = ?"
-                )) {
+        Connection connection = null;
+        PreparedStatement st = null;
+        try {
+            connection = dataSource.getConnection();
             connection.setAutoCommit(false);
+            st = connection.prepareStatement(
+                    "UPDATE car SET brand = ?, registration_number = ? WHERE id = ?"
+            );
+
             if (!isRegistrationNumberUnique(connection, car)) {
-                throw new InvalidEntityException("Car with same registration number found when updating car " + car);
+                throw new InvalidEntityException(
+                        "Car with same registration number found when updating car " + car);
             }
 
             st.setString(1, car.getBrand());
@@ -110,85 +143,125 @@ public class CarManagerImpl implements CarManager {
             st.setLong(3, car.getId());
 
             int count = st.executeUpdate();
-            if (count == 0) {
-                throw new EntityNotFoundException("Car " + car + " was not found in database.");
-            } else if (count != 1) {
-                throw new ServiceFailureException("Invalid updated rows count detected (one row should be updated): " + count + " when updating car " + car);
-            }
+            DBUtils.checkUpdatesCount(count, car, Operation.UPDATE);
             connection.commit();
         } catch (SQLException ex) {
-            throw new ServiceFailureException("Error when updating car " + car, ex);
+            String msg = "Error when updating car " + car + " in db";
+            logger.log(Level.SEVERE, msg, ex);
+            throw new ServiceFailureException(msg, ex);
+        } finally {
+            DBUtils.doRollbackQuietly(connection);
+            DBUtils.closeQuietly(connection, st);
         }
     }
 
     @Override
-    public void deleteCar(Car car) throws EntityNotFoundException, ServiceFailureException {
+    public void deleteCar(Car car) throws EntityNotFoundException {
+        checkDataSource();
         if (car == null) {
             throw new IllegalArgumentException("car is null");
         }
         if (car.getId() == null) {
             throw new IllegalArgumentException("car id is null");
         }
+        Connection connection = null;
+        PreparedStatement st = null;
+        try {
+            connection = dataSource.getConnection();
+            st = connection.prepareStatement(
+                    "DELETE FROM car WHERE id = ?"
+            );
 
-        try (Connection connection = dataSource.getConnection();
-                PreparedStatement st = connection.prepareStatement(
-                        "DELETE FROM car WHERE id = ?"
-                )) {
             st.setLong(1, car.getId());
 
             int count = st.executeUpdate();
-            if (count == 0) {
-                throw new EntityNotFoundException("Car " + car + " was not found in database!.");
-            } else if (count != 1) {
-                throw new ServiceFailureException("Invalid deleted rows count detected (one row should be updated): " + count + " when deleting car " + car);
-            }
+            DBUtils.checkUpdatesCount(count, car, Operation.DELETE);
         } catch (SQLException ex) {
-            throw new ServiceFailureException("Error when deleting car " + car, ex);
+            String msg = "Error when deleting car " + car + " from db";
+            logger.log(Level.SEVERE, msg, ex);
+            throw new ServiceFailureException(msg, ex);
+        } finally {
+            DBUtils.closeQuietly(connection, st);
         }
     }
 
     @Override
-    public List<Car> findAllCars() throws ServiceFailureException {
-        try (Connection connection = dataSource.getConnection();
-                PreparedStatement st = connection.prepareStatement(
-                        "SELECT id, brand, registration_number FROM car"
-                )) {
+    public List<Car> findAllCars() {
+        checkDataSource();
 
-            ResultSet rs = st.executeQuery();
-
-            List<Car> result = new ArrayList<>();
-            while (rs.next()) {
-                result.add(resultSetToCar(rs));
-            }
-            return result;
+        Connection connection = null;
+        PreparedStatement st = null;
+        try {
+            connection = dataSource.getConnection();
+            st = connection.prepareStatement(
+                    "SELECT id, brand, registration_number FROM car"
+            );
+            return executeQueryForMultipleCars(st);
         } catch (SQLException ex) {
-            throw new ServiceFailureException("Error when retrieving all cars", ex);
+            String msg = "Error when retrieving all cars from db";
+            logger.log(Level.SEVERE, msg, ex);
+            throw new ServiceFailureException(msg, ex);
+        } finally {
+            DBUtils.closeQuietly(connection, st);
         }
     }
 
     @Override
-    public List<Car> findCarsByBrand(String brand) throws ServiceFailureException {
+    public List<Car> findCarsByBrand(String brand) {
+        checkDataSource();
+
         if (brand == null) {
             throw new IllegalArgumentException("brand is null");
         }
-        try (Connection connection = dataSource.getConnection();
-                PreparedStatement st = connection.prepareStatement(
-                        "SELECT id, brand, registration_number FROM car WHERE brand = ?"
-                )) {
-            st.setString(1, brand);
-            ResultSet rs = st.executeQuery();
 
-            List<Car> result = new ArrayList<>();
-            while (rs.next()) {
-                result.add(resultSetToCar(rs));
-            }
-            return result;
+        Connection connection = null;
+        PreparedStatement st = null;
+        try {
+            connection = dataSource.getConnection();
+            st = connection.prepareStatement(
+                    "SELECT id, brand, registration_number FROM car WHERE brand = ?"
+            );
+            st.setString(1, brand);
+
+            return executeQueryForMultipleCars(st);
         } catch (SQLException ex) {
-            throw new ServiceFailureException("Error when retrieving car by brand " + brand, ex);
+            String msg = "Error when retrieving all cars from db";
+            logger.log(Level.SEVERE, msg, ex);
+            throw new ServiceFailureException(msg, ex);
+        } finally {
+            DBUtils.closeQuietly(connection, st);
         }
     }
 
-    private void validate(Car car) throws IllegalArgumentException, InvalidEntityException {
+    static Car executeQueryForSingleGrave(PreparedStatement st) throws
+            SQLException, EntityNotFoundException {
+        ResultSet rs = st.executeQuery();
+        if (rs.next()) {
+            Car car = resultSetToCar(rs);
+
+            if (rs.next()) {
+                throw new ServiceFailureException(
+                        "Internal error: More car with the same id found");
+            }
+
+            return car;
+        } else {
+            return null;
+        }
+    }
+
+    static List<Car> executeQueryForMultipleCars(PreparedStatement st) throws
+            SQLException {
+        ResultSet rs = st.executeQuery();
+        List<Car> result = new ArrayList<>();
+        while (rs.next()) {
+            result.add(resultSetToCar(rs));
+        }
+        return result;
+    }
+
+    private static void validate(Car car) throws IllegalArgumentException,
+            InvalidEntityException {
         if (car == null) {
             throw new IllegalArgumentException("car is null");
         }
@@ -210,28 +283,7 @@ public class CarManagerImpl implements CarManager {
         }
     }
 
-    private Long getKey(ResultSet keyRS, Car car) throws ServiceFailureException, SQLException {
-        if (keyRS.next()) {
-            if (keyRS.getMetaData().getColumnCount() != 1) {
-                throw new ServiceFailureException("Internal Error: Generated key"
-                        + "retriving failed when trying to insert car " + car
-                        + " - wrong key fields count: " + keyRS.getMetaData().getColumnCount());
-            }
-            Long result = keyRS.getLong(1);
-            if (keyRS.next()) {
-                throw new ServiceFailureException("Internal Error: Generated key"
-                        + "retriving failed when trying to insert car " + car
-                        + " - more keys found");
-            }
-            return result;
-        } else {
-            throw new ServiceFailureException("Internal Error: Generated key"
-                    + "retriving failed when trying to insert car " + car
-                    + " - no key found");
-        }
-    }
-
-    private Car resultSetToCar(ResultSet rs) throws SQLException {
+    private static Car resultSetToCar(ResultSet rs) throws SQLException {
         Car car = new Car();
 
         car.setId(rs.getLong("id"));
@@ -241,7 +293,8 @@ public class CarManagerImpl implements CarManager {
         return car;
     }
 
-    private boolean isRegistrationNumberUnique(Connection connection, Car car) {
+    private static boolean isRegistrationNumberUnique(Connection connection,
+            Car car) {
         try (PreparedStatement st = connection.prepareStatement(
                 "SELECT id FROM car WHERE registration_number = ?"
         )) {
@@ -249,11 +302,14 @@ public class CarManagerImpl implements CarManager {
             ResultSet rs = st.executeQuery();
 
             if (rs.next()) {
-                return car.getId() != null && car.getId().equals(rs.getLong("id"));
+                return car.getId() != null && car.getId().equals(rs.
+                        getLong("id"));
             }
             return true;
         } catch (SQLException ex) {
-            throw new ServiceFailureException("Error when checking uniqueness or registration number for car " + car, ex);
+            throw new ServiceFailureException(
+                    "Error when checking uniqueness or registration number for car " + car,
+                    ex);
         }
     }
 }

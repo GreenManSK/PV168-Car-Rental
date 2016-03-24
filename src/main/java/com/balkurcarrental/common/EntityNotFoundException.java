@@ -1,10 +1,10 @@
-package com.balkurcarrental.backend.exceptions;
+package com.balkurcarrental.common;
 
 /**
  * Entity not found exception
  * @author Lukáš Kurčík <lukas.kurcik at gmail.com>
  */
-public class EntityNotFoundException extends Exception {
+public class EntityNotFoundException extends RuntimeException {
 
     public EntityNotFoundException(String msg) {
         super(msg);

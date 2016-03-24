@@ -1,7 +1,7 @@
 package com.balkurcarrental.backend;
 
-import com.balkurcarrental.backend.exceptions.EntityNotFoundException;
-import com.balkurcarrental.backend.exceptions.InvalidEntityException;
+import com.balkurcarrental.common.EntityNotFoundException;
+import com.balkurcarrental.common.InvalidEntityException;
 import java.util.Date;
 import org.junit.Before;
 import org.junit.Test;

@@ -1,21 +1,22 @@
 package com.balkurcarrental.backend;
 
-import com.balkurcarrental.backend.exceptions.EntityNotFoundException;
-import com.balkurcarrental.backend.exceptions.InvalidEntityException;
-import java.sql.Connection;
+import com.balkurcarrental.common.DBUtils;
+import com.balkurcarrental.common.EntityNotFoundException;
+import com.balkurcarrental.common.InvalidEntityException;
+import com.balkurcarrental.common.ServiceFailureException;
 import org.junit.Before;
 import org.junit.Test;
-import static org.junit.Assert.*;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 import org.apache.derby.jdbc.EmbeddedDataSource;
 import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.List;
+import java.util.function.Consumer;
 import javax.sql.DataSource;
 import org.junit.After;
+
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 /**
  * Tests for CarManagerImpl
@@ -24,7 +25,9 @@ import org.junit.After;
  */
 public class CarManagerImplTest {
 
-    private static final Comparator<Car> CAR_ID_COMPARATOR = (c1, c2) -> c1.getId().compareTo(c2.getId());
+    private static final Comparator<Car> CAR_ID_COMPARATOR = (c1, c2) -> c1.
+            getId().compareTo(
+                    c2.getId());
 
     private CarManagerImpl managerImpl;
     private DataSource dataSource;
@@ -35,33 +38,49 @@ public class CarManagerImplTest {
     @Before
     public void setUp() throws SQLException {
         dataSource = prepareDataSource();
-        try (Connection connection = dataSource.getConnection()) {
-            connection.prepareStatement("CREATE TABLE car ("
-                    + "id BIGINT NOT NULL PRIMARY KEY GENERATED ALWAYS AS IDENTITY,"
-                    + "brand VARCHAR(50) NOT NULL,"
-                    + "registration_number VARCHAR(50) NOT NULL)").executeUpdate();
-        }
-        managerImpl = new CarManagerImpl(dataSource);
+        DBUtils.executeSqlScript(dataSource, CarManager.class.getResource(
+                "createTables.sql"));
+        managerImpl = new CarManagerImpl();
+        managerImpl.setDataSource(dataSource);
     }
 
     @After
     public void tearDown() throws SQLException {
-        try (Connection connection = dataSource.getConnection()) {
-            connection.prepareStatement("DROP TABLE car").executeUpdate();
-        }
+        DBUtils.executeSqlScript(dataSource, CarManager.class.getResource(
+                "dropTables.sql"));
+    }
+
+    private static DataSource prepareDataSource() throws SQLException {
+        EmbeddedDataSource ds = new EmbeddedDataSource();
+        //we will use in memory database
+        ds.setDatabaseName("memory:carrental-test");
+        ds.setCreateDatabase("create");
+        return ds;
+    }
+
+    private CarBuilder createCarBMW() {
+        return new CarBuilder().id(null).brand("BMW").
+                registrationNumber("AB123");
+    }
+
+    private CarBuilder createCarMercedes() {
+        return new CarBuilder().id(null).brand("Mercedes").
+                registrationNumber("FG789");
     }
 
     @Test
-    public void createAndGetCar() throws InvalidEntityException, EntityNotFoundException {
-        Car car = createNewCar("BMW", "BB126");
+    public void createAndGetCar() throws InvalidEntityException,
+            EntityNotFoundException {
+        Car car = createCarBMW().build();
         managerImpl.createCar(car);
 
         Long carId = car.getId();
-        assertNotNull(carId);
-        Car result = managerImpl.getCarById(carId);
-        assertEquals(car, result);
-        assertNotSame(car, result);
-        assertDeepEquals(car, result);
+        assertThat(carId).isNotNull();
+
+        assertThat(managerImpl.getCarById(carId)).isEqualTo(car).
+                isNotSameAs(car).
+                isEqualToComparingFieldByField(
+                        car);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -69,46 +88,61 @@ public class CarManagerImplTest {
         managerImpl.createCar(null);
     }
 
+    private void testCreateUnsuccessfuly(Consumer<CarBuilder> setOperation)
+            throws
+            InvalidEntityException {
+        testCreateUnsuccessfuly(setOperation, IllegalArgumentException.class);
+    }
+
+    private void testCreateUnsuccessfuly(Consumer<CarBuilder> setOperation,
+            Class<? extends Exception> exceptionClass)
+            throws
+            InvalidEntityException {
+        CarBuilder carBuilder = createCarBMW();
+        setOperation.accept(carBuilder);
+        Car car = carBuilder.build();
+        expectedException.expect(exceptionClass);
+        managerImpl.createCar(car);
+    }
+
     @Test
     public void createCarWithSetId() throws InvalidEntityException {
-        Car car = createNewCar(12L, "BMW", "BB126");
-        expectedException.expect(IllegalArgumentException.class);
-        managerImpl.createCar(car);
+        testCreateUnsuccessfuly((cb) -> cb.id(12L));
     }
 
     @Test
     public void createCarWithNullBrand() throws InvalidEntityException {
-        Car car = createNewCar(null, "BB126");
-        expectedException.expect(InvalidEntityException.class);
-        managerImpl.createCar(car);
+        testCreateUnsuccessfuly((cb) -> cb.brand(null),
+                InvalidEntityException.class);
     }
 
     @Test
     public void createCarWithEmptyBrand() throws InvalidEntityException {
-        Car car = createNewCar("  ", "BB126");
-        expectedException.expect(InvalidEntityException.class);
-        managerImpl.createCar(car);
+        testCreateUnsuccessfuly((cb) -> cb.brand("   "),
+                InvalidEntityException.class);
     }
 
     @Test
-    public void createCarWithNullRegistrationNumber() throws InvalidEntityException {
-        Car car = createNewCar("BMW", null);
-        expectedException.expect(InvalidEntityException.class);
-        managerImpl.createCar(car);
+    public void createCarWithNullRegistrationNumber() throws
+            InvalidEntityException {
+        testCreateUnsuccessfuly((cb) -> cb.registrationNumber(null),
+                InvalidEntityException.class);
     }
 
     @Test
-    public void createCarWithEmptyRegistrationNumber() throws InvalidEntityException {
-        Car car = createNewCar("BMW", "    ");
-        expectedException.expect(InvalidEntityException.class);
-        managerImpl.createCar(car);
+    public void createCarWithEmptyRegistrationNumber() throws
+            InvalidEntityException {
+        testCreateUnsuccessfuly((cb) -> cb.registrationNumber("    "),
+                InvalidEntityException.class);
     }
 
     @Test
-    public void createCarWithUsedRegistrationNumber() throws InvalidEntityException {
+    public void createCarWithUsedRegistrationNumber() throws
+            InvalidEntityException {
         String regNumber = "ABC123";
-        Car carBMW = createNewCar("BMW", regNumber);
-        Car carPeugeot = createNewCar("Peugeot", regNumber);
+        Car carBMW = createCarBMW().registrationNumber(regNumber).build();
+        Car carPeugeot = createCarMercedes().registrationNumber(regNumber).
+                build();
 
         managerImpl.createCar(carBMW);
         expectedException.expect(InvalidEntityException.class);
@@ -125,143 +159,133 @@ public class CarManagerImplTest {
         Car carById = managerImpl.getCarById(1024L);
     }
 
-    @Test
-    public void updateCar() throws InvalidEntityException, EntityNotFoundException {
-        Car carBmw = createDefaultCar();
-        Car carPeugeot = createNewCar("Peugeot", "CD456");
+    private void testUpdateSuccessfuly(Consumer<Car> updateOperation) throws
+            InvalidEntityException, EntityNotFoundException {
+        Car carBmw = createCarBMW().build();
+        Car carPeugeot = createCarMercedes().build();
+        managerImpl.createCar(carBmw);
         managerImpl.createCar(carPeugeot);
 
-        Long carId = carBmw.getId();
-
-        carBmw.setBrand("Mercedes");
-        carBmw.setRegistrationNumber("FG789");
+        updateOperation.accept(carBmw);
         managerImpl.updateCar(carBmw);
 
-        carBmw = managerImpl.getCarById(carId);
-        assertEquals("Mercedes", carBmw.getBrand());
-        assertEquals("FG789", carBmw.getRegistrationNumber());
-
-        // Check if updates didn't affected other records
-        assertDeepEquals(carPeugeot, managerImpl.getCarById(carPeugeot.getId()));
+        assertThat(managerImpl.getCarById(carBmw.getId())).
+                isEqualToComparingFieldByField(carBmw);
+        assertThat(managerImpl.getCarById(carPeugeot.getId())).
+                isEqualToComparingFieldByField(carPeugeot);
     }
 
     @Test
-    public void updateCarBrand() throws InvalidEntityException, EntityNotFoundException {
-        Car carBmw = createDefaultCar();
-        Car carPeugeot = createNewCar("Peugeot", "CD456");
-        managerImpl.createCar(carPeugeot);
-
-        Long carId = carBmw.getId();
-
-        carBmw.setBrand("Mercedes");
-        managerImpl.updateCar(carBmw);
-
-        carBmw = managerImpl.getCarById(carId);
-        assertEquals("Mercedes", carBmw.getBrand());
-        assertEquals("AB123", carBmw.getRegistrationNumber());
-
-        // Check if updates didn't affected other records
-        assertDeepEquals(carPeugeot, managerImpl.getCarById(carPeugeot.getId()));
+    public void updateCar() throws InvalidEntityException,
+            EntityNotFoundException {
+        testUpdateSuccessfuly((c) -> {
+            c.setRegistrationNumber("ABC123");
+            c.setBrand("Peugeot");
+        });
     }
 
     @Test
-    public void updateCarRegistrationNumber() throws InvalidEntityException, EntityNotFoundException {
-        Car carBmw = createDefaultCar();
-        Car carPeugeot = createNewCar("Peugeot", "CD456");
-        managerImpl.createCar(carPeugeot);
+    public void updateCarBrand() throws InvalidEntityException,
+            EntityNotFoundException {
+        testUpdateSuccessfuly((c) -> {
+            c.setBrand("Peugeot");
+        });
+    }
 
-        Long carId = carBmw.getId();
-
-        carBmw.setRegistrationNumber("FG789");
-        managerImpl.updateCar(carBmw);
-
-        carBmw = managerImpl.getCarById(carId);
-        assertEquals("BMW", carBmw.getBrand());
-        assertEquals("FG789", carBmw.getRegistrationNumber());
-
-        // Check if updates didn't affected other records
-        assertDeepEquals(carPeugeot, managerImpl.getCarById(carPeugeot.getId()));
+    @Test
+    public void updateCarRegistrationNumber() throws InvalidEntityException,
+            EntityNotFoundException {
+        testUpdateSuccessfuly((c) -> {
+            c.setRegistrationNumber("ABC123");
+        });
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void updateNullCar() throws InvalidEntityException, EntityNotFoundException {
+    public void updateNullCar() throws InvalidEntityException,
+            EntityNotFoundException {
         managerImpl.updateCar(null);
     }
 
     @Test
-    public void updateCarWithNullId() throws InvalidEntityException, EntityNotFoundException {
-        Car car = createNewCar(null, "BMW", "ABC123");
+    public void updateCarWithNullId() throws InvalidEntityException,
+            EntityNotFoundException {
+        Car car = createCarBMW().build();
         car.setBrand("BCC");
         expectedException.expect(IllegalArgumentException.class);
         managerImpl.updateCar(car);
     }
 
     @Test
-    public void updateCarWithNonExistingId() throws InvalidEntityException, EntityNotFoundException {
-        Car car = createNewCar(128L, "BMW", "ABC123");
+    public void updateCarWithNonExistingId() throws InvalidEntityException,
+            EntityNotFoundException {
+        Car car = createCarBMW().id(128L).build();
         car.setBrand("BCC");
         expectedException.expect(EntityNotFoundException.class);
         managerImpl.updateCar(car);
     }
 
     @Test
-    public void updateCarWithNullBrand() throws InvalidEntityException, EntityNotFoundException {
-        Car car = createDefaultCar();
-        car.setBrand(null);
+    public void updateCarWithNullBrand() throws InvalidEntityException,
+            EntityNotFoundException {
+        Car car = createCarBMW().brand(null).build();
         expectedException.expect(InvalidEntityException.class);
         managerImpl.updateCar(car);
     }
 
     @Test
-    public void updateCarWithEmptyBrand() throws InvalidEntityException, EntityNotFoundException {
-        Car car = createDefaultCar();
-        car.setBrand("   ");
+    public void updateCarWithEmptyBrand() throws InvalidEntityException,
+            EntityNotFoundException {
+        Car car = createCarBMW().brand("   ").build();
         expectedException.expect(InvalidEntityException.class);
         managerImpl.updateCar(car);
     }
 
     @Test
-    public void updateCarWithNullRegistrationNumber() throws InvalidEntityException, EntityNotFoundException {
-        Car car = createDefaultCar();
-        car.setRegistrationNumber(null);
+    public void updateCarWithNullRegistrationNumber() throws
+            InvalidEntityException, EntityNotFoundException {
+        Car car = createCarBMW().registrationNumber(null).build();
         expectedException.expect(InvalidEntityException.class);
         managerImpl.updateCar(car);
     }
 
     @Test
-    public void updateCarWithEmptyRegistrationNumber() throws InvalidEntityException, EntityNotFoundException {
-        Car car = createDefaultCar();
-        car.setRegistrationNumber("   ");
+    public void updateCarWithEmptyRegistrationNumber() throws
+            InvalidEntityException, EntityNotFoundException {
+        Car car = createCarBMW().registrationNumber("   ").build();
         expectedException.expect(InvalidEntityException.class);
         managerImpl.updateCar(car);
     }
 
     @Test
-    public void updateCarWithUsedRegistrationNumber() throws InvalidEntityException, EntityNotFoundException {
-        String regNumber = "ABC123";
-        Car carBMW = createNewCar("BMW", regNumber);
-        Car carPeugeot = createNewCar("Peugeot", "BCD126");
+    public void updateCarWithUsedRegistrationNumber() throws
+            InvalidEntityException, EntityNotFoundException {
+        String regNumber = "DDFGGG";
+        Car carBMW = createCarBMW().build();
+        Car carMercedes = createCarMercedes().registrationNumber(regNumber).
+                build();
 
         managerImpl.createCar(carBMW);
-        managerImpl.createCar(carPeugeot);
+        managerImpl.createCar(carMercedes);
 
-        carPeugeot.setRegistrationNumber(regNumber);
+        carBMW.setRegistrationNumber(regNumber);
         expectedException.expect(InvalidEntityException.class);
-        managerImpl.updateCar(carPeugeot);
+        managerImpl.updateCar(carBMW);
     }
 
     @Test
-    public void deleteCar() throws InvalidEntityException, EntityNotFoundException {
-        Car carBmw = createDefaultCar();
-        Car carPeugeot = createNewCar("Peugeot", "BCD126");
-        managerImpl.createCar(carPeugeot);
+    public void deleteCar() throws InvalidEntityException,
+            EntityNotFoundException {
+        Car carBmw = createCarBMW().build();
+        Car carMercedes = createCarMercedes().build();
+        managerImpl.createCar(carBmw);
+        managerImpl.createCar(carMercedes);
 
         managerImpl.getCarById(carBmw.getId());
-        managerImpl.getCarById(carPeugeot.getId());
+        managerImpl.getCarById(carMercedes.getId());
 
         managerImpl.deleteCar(carBmw);
 
-        managerImpl.getCarById(carPeugeot.getId());
+        managerImpl.getCarById(carMercedes.getId());
         expectedException.expect(EntityNotFoundException.class);
         managerImpl.getCarById(carBmw.getId());
     }
@@ -273,63 +297,57 @@ public class CarManagerImplTest {
 
     @Test
     public void deleteCarWithNullId() throws EntityNotFoundException {
-        Car car = createNewCar(null, "BMW", "ABC123");
+        Car car = createCarBMW().build();
         expectedException.expect(IllegalArgumentException.class);
         managerImpl.deleteCar(car);
     }
 
     @Test
     public void deleteCarWithNonExistingId() throws EntityNotFoundException {
-        Car car = createNewCar(128L, "BMW", "ABC123");
+        Car car = createCarBMW().id(128L).build();
         expectedException.expect(EntityNotFoundException.class);
         managerImpl.deleteCar(car);
     }
 
     @Test
     public void findAllCars() throws InvalidEntityException {
-        assertTrue(managerImpl.findAllCars().isEmpty());
+        assertThat(managerImpl.findAllCars()).isEmpty();
 
-        Car c1 = createDefaultCar();
-        Car c2 = createNewCar("Peugeot", "lkjs");
+        Car c1 = createCarBMW().build();
+        Car c2 = createCarMercedes().build();
+        managerImpl.createCar(c1);
         managerImpl.createCar(c2);
 
-        List<Car> expected = Arrays.asList(c1, c2);
-        List<Car> actual = managerImpl.findAllCars();
-
-        Collections.sort(actual, CAR_ID_COMPARATOR);
-        Collections.sort(expected, CAR_ID_COMPARATOR);
-
-        assertEquals(expected, actual);
-        assertDeepEquals(expected, actual);
+        assertThat(managerImpl.findAllCars())
+                .usingFieldByFieldElementComparator()
+                .containsOnly(c1, c2);
     }
 
     @Test
     public void findAllCarsFromEmpty() {
-        assertTrue(managerImpl.findAllCars().isEmpty());
+        assertThat(managerImpl.findAllCars()).isEmpty();
     }
 
     @Test
     public void findCarsByBrand() throws InvalidEntityException {
-        Car c1 = createDefaultCar();
-        Car c2 = createNewCar("Peugeot", "lkjs");
-        Car c3 = createNewCar("Peugeot", "APO888");
+        Car c1 = createCarBMW().build();
+        Car c2 = createCarMercedes().build();
+        Car c3 = new CarBuilder().brand("Mercedes").registrationNumber(
+                "APO888").build();
+        managerImpl.createCar(c1);
         managerImpl.createCar(c2);
         managerImpl.createCar(c3);
 
-        List<Car> expected = Arrays.asList(c2, c3);
-        List<Car> actual = managerImpl.findCarsByBrand("Peugeot");
-
-        Collections.sort(actual, CAR_ID_COMPARATOR);
-        Collections.sort(expected, CAR_ID_COMPARATOR);
-
-        assertEquals(expected, actual);
-        assertDeepEquals(expected, actual);
+        assertThat(managerImpl.findCarsByBrand("Mercedes"))
+                .usingFieldByFieldElementComparator()
+                .containsOnly(c2, c3);
     }
 
     @Test
     public void findCarsByNonExistingBrand() throws InvalidEntityException {
-        Car c1 = createDefaultCar();
-        assertTrue(managerImpl.findCarsByBrand("Lenovo").isEmpty());
+        Car c1 = createCarBMW().build();
+        managerImpl.createCar(c1);
+        assertThat(managerImpl.findCarsByBrand("Lenovo")).isEmpty();
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -337,45 +355,51 @@ public class CarManagerImplTest {
         managerImpl.findCarsByBrand(null);
     }
 
-    private static DataSource prepareDataSource() throws SQLException {
-        EmbeddedDataSource ds = new EmbeddedDataSource();
-        //we will use in memory database
-        ds.setDatabaseName("memory:carrental-test");
-        ds.setCreateDatabase("create");
-        return ds;
+    private void testExpectedServiceFailureException(
+            Consumer<CarManager> operation) throws SQLException {
+        SQLException sqlException = new SQLException();
+        DataSource failingDataSource = mock(DataSource.class);
+        when(failingDataSource.getConnection()).thenThrow(sqlException);
+        managerImpl.setDataSource(failingDataSource);
+        assertThatThrownBy(() -> operation.accept(managerImpl))
+                .isInstanceOf(ServiceFailureException.class)
+                .hasCause(sqlException);
     }
 
-    private Car createNewCar(Long id, String brand, String registrationNumber) {
-        Car car = new Car();
-        car.setId(id);
-        car.setBrand(brand);
-        car.setRegistrationNumber(registrationNumber);
-        return car;
+    @Test
+    public void createCarWithSqlExceptionThrown() throws SQLException {
+        Car car = createCarBMW().build();
+        testExpectedServiceFailureException((m) -> m.createCar(car));
     }
 
-    private Car createNewCar(String brand, String registrationNumber) {
-        return createNewCar(null, brand, registrationNumber);
-    }
-
-    private Car createDefaultCar() throws InvalidEntityException {
-        Car car = createNewCar("BMW", "AB123");
+    @Test
+    public void getCarByIdWithSqlExceptionThrown() throws SQLException {
+        Car car = createCarBMW().build();
         managerImpl.createCar(car);
-        return car;
+        testExpectedServiceFailureException((m) -> m.getCarById(car.getId()));
     }
 
-    private void assertDeepEquals(List<Car> expectedList, List<Car> actualList) {
-        assertSame(expectedList.size(), actualList.size());
-        for (int i = 0; i < expectedList.size(); i++) {
-            Car expected = expectedList.get(i);
-            Car actual = actualList.get(i);
-            assertDeepEquals(expected, actual);
-        }
+    @Test
+    public void updateCarWithSqlExceptionThrown() throws SQLException {
+        Car car = createCarBMW().build();
+        managerImpl.createCar(car);
+        testExpectedServiceFailureException((m) -> m.updateCar(car));
     }
 
-    private void assertDeepEquals(Car expected, Car actual) {
-        assertEquals(expected.getId(), actual.getId());
-        assertEquals(expected.getBrand(), actual.getBrand());
-        assertEquals(expected.getRegistrationNumber(), actual.getRegistrationNumber());
+    @Test
+    public void deleteCarWithSqlExceptionThrown() throws SQLException {
+        Car car = createCarBMW().build();
+        managerImpl.createCar(car);
+        testExpectedServiceFailureException((m) -> m.deleteCar(car));
     }
 
+    @Test
+    public void findAllCarsWithSqlExceptionThrown() throws SQLException {
+        testExpectedServiceFailureException((m) -> m.findAllCars());
+    }
+
+    @Test
+    public void findCarsByBrandWithSqlExceptionThrown() throws SQLException {
+        testExpectedServiceFailureException((m) -> m.findCarsByBrand("BMW"));
+    }
 }

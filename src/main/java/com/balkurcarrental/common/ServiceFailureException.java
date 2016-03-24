@@ -1,4 +1,4 @@
-package com.balkurcarrental.backend.exceptions;
+package com.balkurcarrental.common;
 
 /**
  * Indicates service failure.
