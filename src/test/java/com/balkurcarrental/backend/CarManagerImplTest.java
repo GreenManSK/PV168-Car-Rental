@@ -377,4 +377,53 @@ public class CarManagerImplTest {
     public void findCarsByBrandWithSqlExceptionThrown() throws SQLException {
         testExpectedServiceFailureException((m) -> m.findCarsByBrand("BMW"));
     }
+
+    @Test
+    public void createCarWithoutDataSource() {
+        managerImpl.setDataSource(null);
+        Car car = createCarBMW().build();
+        expectedException.expect(IllegalStateException.class);
+        managerImpl.createCar(car);
+    }
+
+    @Test
+    public void getCarByIdWithoutDataSource() {
+        Car car = createCarBMW().build();
+        managerImpl.createCar(car);
+        managerImpl.setDataSource(null);
+        expectedException.expect(IllegalStateException.class);
+        managerImpl.getCarById(car.getId());
+    }
+
+    @Test
+    public void updateCarWithoutDataSource() {
+        Car car = createCarBMW().build();
+        managerImpl.createCar(car);
+        managerImpl.setDataSource(null);
+        expectedException.expect(IllegalStateException.class);
+        managerImpl.updateCar(car);
+    }
+
+    @Test
+    public void deleteCarWithoutDataSource() {
+        Car car = createCarBMW().build();
+        managerImpl.createCar(car);
+        managerImpl.setDataSource(null);
+        expectedException.expect(IllegalStateException.class);
+        managerImpl.deleteCar(car);
+    }
+
+    @Test
+    public void findAllCarsWithoutDataSource() {
+        managerImpl.setDataSource(null);
+        expectedException.expect(IllegalStateException.class);
+        managerImpl.findAllCars();
+    }
+
+    @Test
+    public void findCarsByBrandWithoutDataSource() {
+        managerImpl.setDataSource(null);
+        expectedException.expect(IllegalStateException.class);
+        managerImpl.findCarsByBrand("BMW");
+    }
 }
