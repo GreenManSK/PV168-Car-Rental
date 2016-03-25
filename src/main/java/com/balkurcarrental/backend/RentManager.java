@@ -20,10 +20,10 @@ public interface RentManager {
      * @throws IllegalArgumentException when rent is null, or rent has already
      * assigned id.
      * @throws ServiceFailureException when db operation fails.
-     * @throws com.balkurcarrental.common.InvalidEntityException
-     * when expectedRentDays or realRentDays is <= 0, beginningOfRent is null,
-     * or car is already rented in this time. When customer is invalid or when
-     * car is invalid
+     * @throws com.balkurcarrental.common.InvalidEntityException when
+     * expectedReturnDate or realReturnDate is before beginningDate,
+     * beginningDate is null, or car is already rented in this time. When
+     * customer is invalid or when car is invalid, or pricePerDay id <= 0
      */
     void createRent(Rent rent) throws InvalidEntityException;
 
@@ -32,8 +32,8 @@ public interface RentManager {
      *
      * @param id primary key for requested rent
      * @return rent with given primary key or null if rent doesn't exist
-     * @throws com.balkurcarrental.common.EntityNotFoundException
-     * when entity is not found in the database
+     * @throws com.balkurcarrental.common.EntityNotFoundException when entity is
+     * not found in the database
      * @throws ServiceFailureException when db operation fails.
      * @throws IllegalArgumentException when given id is null.
      */
@@ -44,23 +44,24 @@ public interface RentManager {
      *
      * @param rent updated rent to be stored into database.
      * @throws IllegalArgumentException when rent is null, or rent has null id.
-     * @throws com.balkurcarrental.common.EntityNotFoundException
-     * when entity is not found in the database
+     * @throws com.balkurcarrental.common.EntityNotFoundException when entity is
+     * not found in the database
      * @throws ServiceFailureException when db operation fails.
-     * @throws com.balkurcarrental.common.InvalidEntityException
-     * when expectedRentDays or realRentDays is <= 0, beginningOfRent is null,
-     * or car is already rented in this time. When customer is invalid or when
-     * car is invalid.
+     * @throws com.balkurcarrental.common.InvalidEntityException when
+     * expectedReturnDate or realReturnDate is before beginningDate,
+     * beginningDate is null, or car is already rented in this time. When
+     * customer is invalid or when car is invalid, or pricePerDay id <= 0
      */
-    void updateRent(Rent rent) throws InvalidEntityException, EntityNotFoundException;
+    void updateRent(Rent rent) throws InvalidEntityException,
+            EntityNotFoundException;
 
     /**
      * Deletes rent from database.
      *
      * @param rent rent to be deleted from db.
      * @throws IllegalArgumentException when rent is null, or rent has null id.
-     * @throws com.balkurcarrental.common.EntityNotFoundException
-     * when entity is not found in the database
+     * @throws com.balkurcarrental.common.EntityNotFoundException when entity is
+     * not found in the database
      * @throws ServiceFailureException when db operation fails.
      */
     void deleteRent(Rent rent) throws EntityNotFoundException;

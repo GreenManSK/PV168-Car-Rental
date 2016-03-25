@@ -1,6 +1,6 @@
 package com.balkurcarrental.backend;
 
-import java.util.Date;
+import java.time.LocalDate;
 import java.util.Objects;
 
 /**
@@ -16,9 +16,9 @@ public class Rent {
     private Customer customer;
     private Car car;
     private int pricePerDay;
-    private Date beginningOfRent;
-    private int expectedRentDays;
-    private int realRentDays;
+    private LocalDate beginningDate;
+    private LocalDate expectedReturnDate;
+    private LocalDate realReturnDate;
 
     public Long getId() {
         return id;
@@ -52,28 +52,28 @@ public class Rent {
         this.pricePerDay = pricePerDay;
     }
 
-    public Date getBeginningOfRent() {
-        return beginningOfRent;
+    public LocalDate getBeginningDate() {
+        return beginningDate;
     }
 
-    public void setBeginningOfRent(Date beginningOfRent) {
-        this.beginningOfRent = beginningOfRent;
+    public void setBeginningDate(LocalDate beginningDate) {
+        this.beginningDate = beginningDate;
     }
 
-    public int getExpectedRentDays() {
-        return expectedRentDays;
+    public LocalDate getExpectedReturnDate() {
+        return expectedReturnDate;
     }
 
-    public void setExpectedRentDays(int expectedRentDays) {
-        this.expectedRentDays = expectedRentDays;
+    public void setExpectedReturnDate(LocalDate expectedReturnDate) {
+        this.expectedReturnDate = expectedReturnDate;
     }
 
-    public int getRealRentDays() {
-        return realRentDays;
+    public LocalDate getRealReturnDate() {
+        return realReturnDate;
     }
 
-    public void setRealRentDays(int realRentDays) {
-        this.realRentDays = realRentDays;
+    public void setRealReturnDate(LocalDate realReturnDate) {
+        this.realReturnDate = realReturnDate;
     }
 
     @Override
@@ -83,9 +83,9 @@ public class Rent {
                 + ", customer=" + customer.toString()
                 + ", car=" + car.toString()
                 + ", pricePerDay=" + pricePerDay
-                + ", beginningOfRent=" + beginningOfRent.toString()
-                + ", expectedRentDays=" + expectedRentDays
-                + ", realRentDays=" + realRentDays
+                + ", beginningOfRent=" + beginningDate
+                + ", expectedRentDays=" + expectedReturnDate
+                + ", realRentDays=" + realReturnDate
                 + "}";
     }
 

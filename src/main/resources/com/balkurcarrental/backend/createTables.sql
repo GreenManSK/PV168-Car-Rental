@@ -21,7 +21,7 @@ CREATE TABLE rent (
     customer_id BIGINT NOT NULL,
     car_id BIGINT NOT NULL,
     price_per_day INTEGER NOT NULL,
-    beginning_of_rent DATE NOT NULL,
-    expected_rent_days INTEGER,
-    real_rent_days INTEGER
+    beginning_date DATE NOT NULL,
+    expected_return_date DATE,
+    real_return_date DATE
  );
